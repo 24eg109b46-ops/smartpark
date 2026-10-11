@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Reports & Analytics')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Audit Reports &amp; CSV Export</h2>
+            <p class="text-muted small mb-0">Generate facility occupancy reports, financial reconciliations, and raw CSV dumps</p>
+        </div>
+        <div>
+            <a th:href="@{/admin/reports/export-csv(startDate=${startDate}, endDate=${endDate})}" class="btn btn-success shadow-sm">
+                <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export Bookings as CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Range Filter Card -->
+    <div class="card shadow-sm border-0 mb-4 p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-calendar-range text-primary me-2"></i>Filter Date Window</h5>
+        <form th:action="@{/admin/reports}" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Start Timestamp</label>
+                <input type="datetime-local" class="form-control" name="startDate" th:value="${startDate}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">End Timestamp</label>
+                <input type="datetime-local" class="form-control" name="endDate" th:value="${endDate}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+            </div>
+            <div class="col-md-2">
+                <a th:href="@{/admin/reports}" class="btn btn-outline-secondary w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card p-3 border-0 shadow-sm text-center">
+                <div class="text-muted small text-uppercase">Total Captured Revenue</div>
+                <div class="h3 fw-bold text-success mb-0" th:text="'$' + ${stats.totalRevenue}">$0.00</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 border-0 shadow-sm text-center">
+                <div class="text-muted small text-uppercase">Total Slot Capacity</div>
+                <div class="h3 fw-bold text-primary mb-0" th:text="${stats.totalSlots}">47</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 border-0 shadow-sm text-center">
+                <div class="text-muted small text-uppercase">Total Drivers Registered</div>
+                <div class="h3 fw-bold text-info mb-0" th:text="${stats.totalDrivers}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Callout Card -->
+    <div class="card border-0 shadow-sm p-4 text-center bg-white">
+        <div class="stat-icon green mx-auto mb-3">
+            <i class="bi bi-file-earmark-spreadsheet fs-2"></i>
+        </div>
+        <h4 class="fw-bold">Ready for Data Export</h4>
+        <p class="text-muted max-w-600 mx-auto mb-4">
+            The CSV file includes booking codes, customer names and emails, vehicle license plates and types, allocated bay numbers, arrival and departure timestamps, status transitions, final amounts, and payment verification records.
+        </p>
+        <div>
+            <a th:href="@{/admin/reports/export-csv(startDate=${startDate}, endDate=${endDate})}" class="btn btn-lg btn-accent px-5">
+                <i class="bi bi-download me-2"></i>Download smartpark_bookings_report.csv
+            </a>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

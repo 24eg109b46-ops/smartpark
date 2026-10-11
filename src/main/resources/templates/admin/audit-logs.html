@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('System Audit Trail')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">System Audit &amp; Activity Log</h2>
+            <p class="text-muted small mb-0">Immutable compliance log of user logins, reservations, gate check-in/out, and financial transactions</p>
+        </div>
+    </div>
+
+    <!-- Filter by Action -->
+    <div class="card shadow-sm border-0 mb-4 p-3">
+        <form th:action="@{/admin/audit-logs}" method="get" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" name="action" th:value="${selectedAction}" placeholder="Filter action: LOGIN, BOOKING_CREATED, CHECK_IN...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filter Action</button>
+            </div>
+            <div class="col-md-2">
+                <a th:href="@{/admin/audit-logs}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>User Email</th>
+                    <th>Action Details</th>
+                    <th>IP Origin</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${logsPage.totalElements == 0}">
+                    <td colspan="5" class="text-center py-5 text-muted">No audit logs recorded yet.</td>
+                </tr>
+                <tr th:each="l : ${logsPage.content}">
+                    <td>
+                        <span class="small font-monospace" th:text="${#temporals.format(l.createdAt, 'yyyy-MM-dd HH:mm:ss')}">Timestamp</span>
+                    </td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${l.action.contains('LOGIN') ? 'bg-primary' : (l.action.contains('BOOKING') ? 'bg-info text-dark' : (l.action.contains('PAYMENT') ? 'bg-success' : 'bg-secondary'))}"
+                              th:text="${l.action}">LOGIN</span>
+                    </td>
+                    <td class="fw-semibold" th:text="${l.userEmail != null ? l.userEmail : 'System / Gate'}">admin@smartpark.com</td>
+                    <td class="small" th:text="${l.details}">Details of event</td>
+                    <td>
+                        <small class="text-muted font-monospace" th:text="${l.ipAddress != null ? l.ipAddress : '127.0.0.1'}">127.0.0.1</small>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center" th:if="${logsPage.totalPages > 1}">
+            <div class="small text-muted">
+                Page <span th:text="${logsPage.number + 1}">1</span> of <span th:text="${logsPage.totalPages}">1</span>
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${logsPage.first ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/admin/audit-logs(page=${logsPage.number - 1}, action=${selectedAction})}">Previous</a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link" th:text="${logsPage.number + 1}">1</span>
+                </li>
+                <li class="page-item" th:classappend="${logsPage.last ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/admin/audit-logs(page=${logsPage.number + 1}, action=${selectedAction})}">Next</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>
