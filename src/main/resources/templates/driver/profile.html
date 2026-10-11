@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('My Profile')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-4">
+    <div class="row g-4 justify-content-center">
+        <!-- Profile Info Card -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-person-circle text-primary me-2"></i>Account Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/driver/profile}" method="post" th:object="${profileRequest}">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email Address (Registered)</label>
+                            <input type="text" class="form-control bg-light" th:value="${currentUser.email}" readonly disabled>
+                            <small class="text-muted">Email is permanent and used for sign-in.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold">Full Name</label>
+                            <input type="text" class="form-control" th:field="*{name}" id="name" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="phone" class="form-label fw-semibold">Phone Number</label>
+                            <input type="text" class="form-control" th:field="*{phone}" id="phone" placeholder="+1-555-0199">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i>Save Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change Card -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-shield-lock text-warning me-2"></i>Change Password</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/driver/profile/password}" method="post" th:object="${passwordRequest}">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label fw-semibold">Current Password</label>
+                            <input type="password" class="form-control" th:field="*{currentPassword}" id="currentPassword" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label fw-semibold">New Password</label>
+                            <input type="password" class="form-control" th:field="*{newPassword}" id="newPassword" required placeholder="Min 6 characters">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="confirmPassword" class="form-label fw-semibold">Confirm New Password</label>
+                            <input type="password" class="form-control" th:field="*{confirmPassword}" id="confirmPassword" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning px-4 fw-semibold">
+                            <i class="bi bi-key me-1"></i>Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

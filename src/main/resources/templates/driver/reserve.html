@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Confirm Slot Reservation')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h4 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-bookmark-plus-fill me-2"></i>Confirm Slot Reservation
+                    </h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Slot Summary Banner -->
+                    <div class="p-3 mb-4 rounded bg-primary-subtle border border-primary-subtle d-flex flex-wrap justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-primary fs-6 px-3 py-1 mb-1" th:text="${slot.slotNumber}">A-01</span>
+                            <h5 class="fw-bold mb-0" th:text="${slot.zone.name}">Zone A - Terminal 1</h5>
+                            <small class="text-muted" th:text="${slot.zone.location} + ' | ' + ${slot.zone.floor}">Location</small>
+                        </div>
+                        <div class="text-end mt-2 mt-sm-0">
+                            <span class="badge bg-light text-dark border px-3 py-2 fw-semibold" th:text="'Designated for: ' + ${slot.vehicleType}">CAR</span>
+                        </div>
+                    </div>
+
+                    <!-- No matching vehicles warning -->
+                    <div th:if="${#lists.isEmpty(vehicles)}" class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        You do not have any registered vehicles. Please <a th:href="@{/driver/vehicles}" class="alert-link">add a vehicle to your garage</a> first before reserving.
+                    </div>
+
+                    <form th:action="@{/driver/reserve}" method="post" th:object="${bookingRequest}">
+                        <input type="hidden" th:field="*{slotId}">
+
+                        <!-- Vehicle Picker -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Your Vehicle *</label>
+                            <select class="form-select" th:field="*{vehicleId}" required>
+                                <option value="" disabled selected>-- Choose from your garage --</option>
+                                <option th:each="v : ${vehicles}"
+                                        th:value="${v.id}"
+                                        th:text="${v.vehicleNumber + ' (' + v.vehicleType + ' - ' + v.brand + ' ' + v.model + ')'}"
+                                        th:disabled="${v.vehicleType != slot.vehicleType}">
+                                </option>
+                            </select>
+                            <small class="text-muted">Only vehicles matching the bay's type (<span th:text="${slot.vehicleType}">CAR</span>) are eligible.</small>
+                        </div>
+
+                        <!-- Time Window -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Scheduled Entry Time *</label>
+                                <input type="datetime-local" class="form-control" th:field="*{entryTime}" required id="resEntryTime">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Expected Duration *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" th:field="*{durationHours}" min="1" max="72" required id="resDuration">
+                                    <span class="input-group-text">Hours</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price Breakdown Card -->
+                        <div class="card bg-light border-0 p-3 mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Estimated Tariff Rate:</span>
+                                <span class="fw-bold" th:text="'$' + ${estimatedPrice}">$25.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Included Grace Period:</span>
+                                <span class="text-success small fw-semibold">15 Free Minutes</span>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Total Estimated Charge:</span>
+                                <span class="fs-4 fw-extrabold text-success" th:text="'$' + ${estimatedPrice}">$50.00</span>
+                            </div>
+                            <small class="text-muted mt-1">Final amount will be calculated upon checkout based on actual elapsed duration.</small>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a th:href="@{/driver/search}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Search
+                            </a>
+                            <button type="submit" class="btn btn-accent px-4 py-2 fw-semibold" th:disabled="${#lists.isEmpty(vehicles)}">
+                                <i class="bi bi-check2-circle me-1"></i>Confirm Reservation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

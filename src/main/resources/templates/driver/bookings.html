@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('My Bookings')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">My Bookings History</h2>
+            <p class="text-muted small mb-0">Track all your parking passes, receipts, and ongoing visits</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <a th:href="@{/driver/search}" class="btn btn-accent">
+                <i class="bi bi-plus-lg me-1"></i> New Reservation
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Filters Bar -->
+    <div class="card shadow-sm border-0 mb-4 p-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-muted small fw-semibold me-2"><i class="bi bi-funnel me-1"></i>Filter Status:</span>
+            <a th:href="@{/driver/bookings}"
+               class="btn btn-sm"
+               th:classappend="${currentStatus == null ? 'btn-primary' : 'btn-outline-secondary'}">
+                All
+            </a>
+            <a th:each="st : ${statuses}"
+               th:href="@{/driver/bookings(status=${st})}"
+               class="btn btn-sm"
+               th:classappend="${currentStatus == st ? 'btn-primary' : 'btn-outline-secondary'}"
+               th:text="${st}">
+                CONFIRMED
+            </a>
+        </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Booking Code</th>
+                    <th>Vehicle</th>
+                    <th>Zone &amp; Bay</th>
+                    <th>Entry Window</th>
+                    <th>Exit / Duration</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${bookingsPage.totalElements == 0}">
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-ticket-detailed fs-1 d-block mb-2 text-secondary"></i>
+                        No booking records found matching the criteria.
+                    </td>
+                </tr>
+                <tr th:each="b : ${bookingsPage.content}">
+                    <td class="fw-bold text-primary" th:text="${b.bookingCode}">SP-12345678</td>
+                    <td>
+                        <div class="fw-semibold" th:text="${b.vehicle.vehicleNumber}">KA-01-AB-1234</div>
+                        <small class="text-muted" th:text="${b.vehicle.vehicleType}">CAR</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${b.slot.slotNumber}">A-01</span>
+                        <div class="small text-muted" th:text="${b.slot.zone.name}">Zone A</div>
+                    </td>
+                    <td>
+                        <span th:text="${#temporals.format(b.entryTime, 'dd MMM yyyy, HH:mm')}">Date</span>
+                    </td>
+                    <td>
+                        <span th:if="${b.exitTime != null}" th:text="${#temporals.format(b.exitTime, 'dd MMM yyyy, HH:mm')}">Exit</span>
+                        <span th:unless="${b.exitTime != null}" th:text="${b.expectedDurationHours} + ' hrs (Est.)'">2 hrs</span>
+                    </td>
+                    <td class="fw-bold text-success" th:text="'$' + ${b.amount}">$25.00</td>
+                    <td>
+                        <span th:if="${b.status.name() == 'ACTIVE'}" class="badge bg-danger">ACTIVE</span>
+                        <span th:if="${b.status.name() == 'CONFIRMED'}" class="badge bg-warning text-dark">CONFIRMED</span>
+                        <span th:if="${b.status.name() == 'COMPLETED'}" class="badge bg-success">COMPLETED</span>
+                        <span th:if="${b.status.name() == 'CANCELLED'}" class="badge bg-secondary">CANCELLED</span>
+                        <span th:if="${b.status.name() == 'EXPIRED'}" class="badge bg-dark">EXPIRED</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/driver/bookings/{id}(id=${b.id})}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> Pass
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center" th:if="${bookingsPage.totalPages > 1}">
+            <div class="small text-muted">
+                Showing page <span th:text="${bookingsPage.number + 1}">1</span> of <span th:text="${bookingsPage.totalPages}">1</span>
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${bookingsPage.first ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/driver/bookings(page=${bookingsPage.number - 1}, status=${currentStatus})}">Previous</a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link" th:text="${bookingsPage.number + 1}">1</span>
+                </li>
+                <li class="page-item" th:classappend="${bookingsPage.last ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/driver/bookings(page=${bookingsPage.number + 1}, status=${currentStatus})}">Next</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

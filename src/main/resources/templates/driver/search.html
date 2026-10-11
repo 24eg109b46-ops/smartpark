@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Search Parking Slots')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-4">
+    <!-- Search Bar Card -->
+    <div class="card shadow-sm border-0 mb-4 p-4">
+        <h4 class="fw-bold mb-3"><i class="bi bi-funnel-fill text-primary me-2"></i>Find Available Parking Bays</h4>
+        <form th:action="@{/driver/search}" method="get" th:object="${searchRequest}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Zone / Location</label>
+                    <select class="form-select" th:field="*{zoneId}">
+                        <option value="">All Zones</option>
+                        <option th:each="z : ${zones}" th:value="${z.id}" th:text="${z.name}"></option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Vehicle Type</label>
+                    <select class="form-select" th:field="*{vehicleType}">
+                        <option value="">All Vehicle Types</option>
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Motorcycle / Bike</option>
+                        <option value="EV">Electric Vehicle (EV)</option>
+                        <option value="TRUCK">Truck / Commercial</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Entry Date &amp; Time</label>
+                    <input type="datetime-local" class="form-control" th:field="*{entryTime}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Duration (Hours)</label>
+                    <input type="number" class="form-control" th:field="*{durationHours}" min="1" max="72">
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">
+                Available Slots: <span class="text-success" th:text="${#lists.size(availableSlots)}">0</span>
+            </h5>
+            <small class="text-muted">Showing live vacancy based on selected time window.</small>
+        </div>
+        <ul class="nav nav-pills" id="viewTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active btn-sm" id="cards-tab" data-bs-toggle="pill" data-bs-target="#cardsView" type="button" role="tab">
+                    <i class="bi bi-grid-fill me-1"></i> Card View
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link btn-sm" id="table-tab" data-bs-toggle="pill" data-bs-target="#tableView" type="button" role="tab">
+                    <i class="bi bi-table me-1"></i> Table View
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- No Slots Empty State -->
+    <div th:if="${#lists.isEmpty(availableSlots)}" class="card p-5 text-center border-0 shadow-sm">
+        <i class="bi bi-x-circle fs-1 text-danger mb-3"></i>
+        <h4 class="fw-bold">No slots available for this search criteria</h4>
+        <p class="text-muted">Try selecting a different time window, vehicle type, or parking facility.</p>
+        <div>
+            <a th:href="@{/driver/search}" class="btn btn-outline-primary">Reset Filters</a>
+        </div>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(availableSlots)}" class="tab-content" id="viewTabsContent">
+        <!-- Cards View -->
+        <div class="tab-pane fade show active" id="cardsView" role="tabpanel">
+            <div class="row g-3">
+                <div th:each="slot : ${availableSlots}" class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card h-100 border-0 shadow-sm p-3 card-hover text-center">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-success-subtle text-success">Vacant</span>
+                            <span class="badge bg-light text-dark border" th:text="${slot.vehicleType}">CAR</span>
+                        </div>
+                        <div class="py-2">
+                            <h3 class="fw-extrabold text-primary mb-1" th:text="${slot.slotNumber}">A-01</h3>
+                            <div class="fw-semibold small" th:text="${slot.zone.name}">Zone A</div>
+                            <small class="text-muted" th:text="${slot.zone.location}">Terminal 1</small>
+                        </div>
+                        <div class="mt-auto pt-2 border-top">
+                            <a th:href="@{/driver/reserve/{id}(id=${slot.id}, durationHours=${searchRequest.durationHours}, entryTime=${searchRequest.entryTime})}"
+                               class="btn btn-accent btn-sm w-100">
+                                <i class="bi bi-bookmark-check me-1"></i> Reserve Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="tab-pane fade" id="tableView" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Slot Number</th>
+                            <th>Zone Name</th>
+                            <th>Location / Floor</th>
+                            <th>Vehicle Type</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="slot : ${availableSlots}">
+                            <td class="fw-bold text-primary fs-5" th:text="${slot.slotNumber}">A-01</td>
+                            <td class="fw-semibold" th:text="${slot.zone.name}">Zone A</td>
+                            <td>
+                                <span th:text="${slot.zone.location}">Terminal 1</span>
+                                <small class="text-muted d-block" th:text="${slot.zone.floor}">Floor 0</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary" th:text="${slot.vehicleType}">CAR</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">AVAILABLE</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/driver/reserve/{id}(id=${slot.id}, durationHours=${searchRequest.durationHours}, entryTime=${searchRequest.entryTime})}"
+                                   class="btn btn-sm btn-accent">
+                                    <i class="bi bi-bookmark-check me-1"></i> Reserve
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

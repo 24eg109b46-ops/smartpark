@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Booking Pass - ' + ${booking.bookingCode})}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a th:href="@{/driver/bookings}" class="text-decoration-none small text-muted">
+                <i class="bi bi-arrow-left me-1"></i> Back to Bookings
+            </a>
+            <h2 class="fw-bold mb-0 mt-1">Digital Parking Pass</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/driver/bookings/{id}/receipt(id=${booking.id})}" class="btn btn-outline-secondary">
+                <i class="bi bi-printer me-1"></i> Printable Receipt
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Pass Card with QR Code -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 text-center p-4">
+                <div class="mb-3">
+                    <span th:if="${booking.status.name() == 'ACTIVE'}" class="badge bg-danger fs-6 px-3 py-2">PARKED (ACTIVE)</span>
+                    <span th:if="${booking.status.name() == 'CONFIRMED'}" class="badge bg-warning text-dark fs-6 px-3 py-2">CONFIRMED (RESERVED)</span>
+                    <span th:if="${booking.status.name() == 'COMPLETED'}" class="badge bg-success fs-6 px-3 py-2">COMPLETED</span>
+                    <span th:if="${booking.status.name() == 'CANCELLED'}" class="badge bg-secondary fs-6 px-3 py-2">CANCELLED</span>
+                    <span th:if="${booking.status.name() == 'EXPIRED'}" class="badge bg-dark fs-6 px-3 py-2">EXPIRED</span>
+                </div>
+
+                <!-- QR Code Display -->
+                <div class="p-3 bg-white d-inline-block mx-auto border rounded shadow-sm mb-3">
+                    <img th:src="${qrCode}" alt="QR Code" class="img-fluid" style="width: 200px; height: 200px;">
+                </div>
+
+                <div class="mb-3">
+                    <div class="text-muted small">BOOKING CODE</div>
+                    <div class="h3 fw-extrabold text-primary letter-spacing-1 font-monospace" th:text="${booking.bookingCode}">SP-12345678</div>
+                    <small class="text-muted">Present this code or QR code at entry/exit gates</small>
+                </div>
+
+                <!-- Payment Status Action Card -->
+                <div class="p-3 rounded bg-light border text-start">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Payment Status:</span>
+                        <span th:if="${booking.payment != null and booking.payment.status.name() == 'PAID'}" class="badge bg-success">PAID</span>
+                        <span th:if="${booking.payment != null and booking.payment.status.name() == 'PENDING'}" class="badge bg-warning text-dark">PENDING</span>
+                        <span th:if="${booking.payment != null and booking.payment.status.name() == 'REFUNDED'}" class="badge bg-info">REFUNDED</span>
+                        <span th:if="${booking.payment != null and booking.payment.status.name() == 'FAILED'}" class="badge bg-danger">FAILED</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted small">Total Fee:</span>
+                        <span class="h5 fw-bold text-success mb-0" th:text="'$' + ${booking.amount}">$25.00</span>
+                    </div>
+
+                    <div th:if="${booking.payment == null or booking.payment.status.name() != 'PAID'}" class="d-grid gap-2">
+                        <a th:href="@{/driver/bookings/{id}/pay(id=${booking.id})}" class="btn btn-accent">
+                            <i class="bi bi-credit-card me-1"></i> Pay Online Now
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Cancellation option -->
+                <div class="mt-4 pt-3 border-top" th:if="${booking.status.name() == 'CONFIRMED' or booking.status.name() == 'PENDING'}">
+                    <form th:action="@{/driver/bookings/{id}/cancel(id=${booking.id})}" method="post"
+                          onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-x-circle me-1"></i> Cancel Reservation
+                        </button>
+                    </form>
+                    <small class="text-muted d-block mt-1">Cancellations are permitted prior to active check-in.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Specifications -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle text-primary me-2"></i>Parking Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Assigned Slot Number</label>
+                            <div class="h4 fw-bold text-primary" th:text="${booking.slot.slotNumber}">A-01</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Vehicle Type Category</label>
+                            <div class="fw-semibold" th:text="${booking.slot.vehicleType}">CAR</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Parking Zone</label>
+                            <div class="fw-semibold" th:text="${booking.slot.zone.name}">Zone A - Terminal 1</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Location / Floor</label>
+                            <div class="fw-semibold" th:text="${booking.slot.zone.location} + ' (' + ${booking.slot.zone.floor} + ')'">Terminal 1 Gate 3</div>
+                        </div>
+                        <div class="col-12"><hr class="my-1"></div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Registered Vehicle</label>
+                            <div class="fw-bold font-monospace" th:text="${booking.vehicle.vehicleNumber}">KA-01-AB-1234</div>
+                            <small class="text-muted" th:text="${booking.vehicle.brand} + ' ' + ${booking.vehicle.model}">Honda Civic</small>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Driver Name</label>
+                            <div class="fw-semibold" th:text="${booking.user.name}">John Driver</div>
+                            <small class="text-muted" th:text="${booking.user.email}">driver@smartpark.com</small>
+                        </div>
+                        <div class="col-12"><hr class="my-1"></div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Scheduled Entry Time</label>
+                            <div class="fw-semibold" th:text="${#temporals.format(booking.entryTime, 'dd MMM yyyy, HH:mm')}">Date</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted small">Exit Time / Status</label>
+                            <div class="fw-semibold" th:if="${booking.exitTime != null}" th:text="${#temporals.format(booking.exitTime, 'dd MMM yyyy, HH:mm')}">Exit</div>
+                            <div class="fw-semibold text-muted" th:unless="${booking.exitTime != null}">Not Checked Out Yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Details if available -->
+            <div class="card shadow-sm border-0" th:if="${booking.payment != null}">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-receipt text-success me-2"></i>Payment Receipt Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 small">
+                        <div class="col-sm-6">
+                            <span class="text-muted">Transaction Reference:</span>
+                            <div class="fw-bold font-monospace" th:text="${booking.payment.transactionRef}">TRX-12345678</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Payment Mode:</span>
+                            <div class="fw-bold" th:text="${booking.payment.mode}">ONLINE</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Amount Paid:</span>
+                            <div class="fw-bold text-success" th:text="'$' + ${booking.payment.amount}">$25.00</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted">Paid Timestamp:</span>
+                            <div class="fw-semibold" th:text="${booking.payment.paidAt != null ? #temporals.format(booking.payment.paidAt, 'dd MMM yyyy, HH:mm') : 'Pending'}">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

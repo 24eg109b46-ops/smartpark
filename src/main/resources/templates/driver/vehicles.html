@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('My Vehicles')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">My Garage</h2>
+            <p class="text-muted small mb-0">Register license plates to quickly reserve matching parking bays</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+            <i class="bi bi-plus-lg me-1"></i> Register New Vehicle
+        </button>
+    </div>
+
+    <!-- Vehicles Grid -->
+    <div class="row g-4 mb-4">
+        <div th:if="${#lists.isEmpty(vehicles)}" class="col-12 text-center py-5">
+            <div class="card p-5 border-0 shadow-sm">
+                <i class="bi bi-car-front fs-1 text-muted mb-3"></i>
+                <h4 class="fw-bold">No vehicles registered yet</h4>
+                <p class="text-muted">Register your car, motorcycle, EV, or truck to book parking slots.</p>
+                <div>
+                    <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+                        Register Your First Vehicle
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div th:each="v : ${vehicles}" class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 p-3 card-hover">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary fs-6 px-3 py-2 font-monospace" th:text="${v.vehicleNumber}">KA-01-AB-1234</span>
+                    <span class="badge bg-secondary-subtle text-secondary" th:text="${v.vehicleType}">CAR</span>
+                </div>
+                <div class="my-2">
+                    <h5 class="fw-bold mb-1" th:text="${(v.brand != null ? v.brand : '') + ' ' + (v.model != null ? v.model : '')}">Honda Civic</h5>
+                    <small class="text-muted">Registered: <span th:text="${#temporals.format(v.createdAt, 'dd MMM yyyy')}">Date</span></small>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" th:data-bs-target="'#editVehicleModal-' + ${v.id}">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </button>
+                    <form th:action="@{/driver/vehicles/delete/{id}(id=${v.id})}" method="post" onsubmit="return confirm('Remove vehicle from your garage?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" th:id="'editVehicleModal-' + ${v.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form th:action="@{/driver/vehicles/edit/{id}(id=${v.id})}" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold">Edit Vehicle</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">License Plate Number</label>
+                                    <input type="text" class="form-control" name="vehicleNumber" th:value="${v.vehicleNumber}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Vehicle Type</label>
+                                    <select class="form-select" name="vehicleType" required>
+                                        <option value="CAR" th:selected="${v.vehicleType.name() == 'CAR'}">Car</option>
+                                        <option value="BIKE" th:selected="${v.vehicleType.name() == 'BIKE'}">Bike / Motorcycle</option>
+                                        <option value="EV" th:selected="${v.vehicleType.name() == 'EV'}">Electric Vehicle (EV)</option>
+                                        <option value="TRUCK" th:selected="${v.vehicleType.name() == 'TRUCK'}">Truck / Heavy</option>
+                                    </select>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold">Make / Brand</label>
+                                        <input type="text" class="form-control" name="brand" th:value="${v.brand}">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold">Model</label>
+                                        <input type="text" class="form-control" name="model" th:value="${v.model}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div class="modal fade" id="addVehicleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/driver/vehicles/add}" method="post" th:object="${newVehicle}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-car-front me-2"></i>Register Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="plate" class="form-label fw-semibold">License Plate *</label>
+                        <input type="text" class="form-control" th:field="*{vehicleNumber}" id="plate" placeholder="e.g. KA-01-AB-1234" required>
+                        <small class="text-muted">Must be 3-20 uppercase alphanumeric characters.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vType" class="form-label fw-semibold">Vehicle Category *</label>
+                        <select class="form-select" th:field="*{vehicleType}" id="vType" required>
+                            <option value="CAR">Car</option>
+                            <option value="BIKE">Motorcycle / Bike</option>
+                            <option value="EV">Electric Vehicle (EV)</option>
+                            <option value="TRUCK">Truck / Commercial</option>
+                        </select>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label for="vBrand" class="form-label fw-semibold">Brand / Manufacturer</label>
+                            <input type="text" class="form-control" th:field="*{brand}" id="vBrand" placeholder="e.g. Honda">
+                        </div>
+                        <div class="col-6">
+                            <label for="vModel" class="form-label fw-semibold">Model</label>
+                            <input type="text" class="form-control" th:field="*{model}" id="vModel" placeholder="e.g. Civic">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-accent"><i class="bi bi-plus-circle me-1"></i>Add Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>
