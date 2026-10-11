@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('About SmartPark')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card p-4 p-md-5 border-0 shadow-sm mb-4">
+                <span class="badge bg-primary-subtle text-primary mb-2 align-self-start px-3 py-1 fw-bold">Project Abstract</span>
+                <h1 class="h2 fw-bold text-primary mb-3">SmartPark – Smart Parking Management System</h1>
+                <p class="lead text-muted">Tagline: <strong>Park Smarter | Save Time | Move Better</strong></p>
+
+                <hr class="my-4">
+
+                <h4 class="fw-bold mb-3">1. Executive Abstract</h4>
+                <p>
+                    SmartPark is a full-stack enterprise web application designed to simplify parking management by connecting vehicle owners, parking operators, and administrators through a centralized platform. Users can register vehicles, search available parking spaces, reserve a slot, view booking details with QR passes, and track live parking status. Parking operators manage parking zones, slots, live occupancy, and active bookings, while administrators oversee users, facilities, tariff rules, and audit logs.
+                </p>
+
+                <h4 class="fw-bold mb-3 mt-4">2. Problem Statement</h4>
+                <p>
+                    In busy campuses, commercial plazas, transit hubs, and corporate complexes, drivers spend excessive time searching for vacant spaces, leading to traffic congestion and fuel waste. Traditional manual paper slips or stand-alone barrier gates make real-time occupancy tracking, reservation scheduling, and audit reconciliation cumbersome. SmartPark delivers an end-to-end digital ecosystem providing live slot visibility, concurrency-safe reservations, and automated duration billing.
+                </p>
+
+                <h4 class="fw-bold mb-3 mt-4">3. System Architecture &amp; Technology Stack</h4>
+                <div class="table-responsive">
+                    <table class="table table-bordered small">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Layer</th>
+                            <th>Technology Choice</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr><td><strong>Backend Framework</strong></td><td>Java 17, Spring Boot 3.3.4, Spring MVC</td></tr>
+                        <tr><td><strong>Security &amp; Auth</strong></td><td>Spring Security 6 (BCrypt, Form Login, Role-Based Access, Session, Remember-Me)</td></tr>
+                        <tr><td><strong>Persistence &amp; ORM</strong></td><td>Spring Data JPA, Hibernate, MySQL 8 (Prod), H2 In-Memory (Local/Tests)</td></tr>
+                        <tr><td><strong>Web UI</strong></td><td>Thymeleaf 3 + Spring Security Extras, Bootstrap 5, Bootstrap Icons, Chart.js</td></tr>
+                        <tr><td><strong>QR Code Engine</strong></td><td>ZXing Core &amp; JavaSE 3.5.3 (Base64 Data URI)</td></tr>
+                        <tr><td><strong>DevOps &amp; CI/CD</strong></td><td>Docker Multi-Stage, Docker Compose, GitHub Actions, Render Cloud</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card p-4 border-0 shadow-sm mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-people-fill text-primary me-2"></i>User Access Roles</h5>
+                <ul class="list-unstyled space-y-3 small mb-0">
+                    <li class="mb-3">
+                        <span class="badge bg-success mb-1">ROLE_DRIVER</span>
+                        <div>Vehicle registration, slot discovery, optimistic reservation, payment simulation, digital QR receipts.</div>
+                    </li>
+                    <li class="mb-3">
+                        <span class="badge bg-warning text-dark mb-1">ROLE_OPERATOR</span>
+                        <div>Zone &amp; slot maintenance, live visual occupancy grid, check-in gate processing, check-out fee billing, cash ledger.</div>
+                    </li>
+                    <li>
+                        <span class="badge bg-danger mb-1">ROLE_ADMIN</span>
+                        <div>Executive dashboard with Chart.js analytics, pricing tariff configuration, staff management, CSV audit reports.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card p-4 border-0 shadow-sm bg-primary text-white">
+                <h5 class="fw-bold mb-2"><i class="bi bi-clock-history me-2"></i>Automated Sweeper</h5>
+                <p class="small text-white-50 mb-0">
+                    SmartPark runs an automated Spring <code>@Scheduled</code> background sweep every 60 seconds that detects any reserved booking that has not checked in within 15 minutes of scheduled entry time, automatically frees the parking bay, marks the booking expired, and notifies the driver.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

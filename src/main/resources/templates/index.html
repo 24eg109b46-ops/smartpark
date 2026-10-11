@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/header :: head('Smart Parking Management System')}"></head>
+<body>
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<!-- Hero Section -->
+<section class="hero-banner py-5">
+    <div class="container py-lg-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7 text-center text-lg-start">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3 rounded-pill bg-white bg-opacity-10 text-white border border-white border-opacity-25 small">
+                    <span class="badge bg-success rounded-pill px-2">Live Availability</span>
+                    <span>Intelligent Slot Allocation &amp; Real-Time Tracking</span>
+                </div>
+                <h1 class="display-4 fw-extrabold text-white mb-3">
+                    SmartPark <br>
+                    <span class="text-warning">Park Smarter | Save Time | Move Better</span>
+                </h1>
+                <p class="lead text-light text-opacity-75 mb-4">
+                    The modern centralized parking platform connecting drivers, parking operators, and facility administrators. Reserve slots ahead, check real-time availability, and pay seamlessly.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
+                    <a th:href="@{/driver/search}" class="btn btn-accent btn-lg px-4 py-3 shadow">
+                        <i class="bi bi-geo-alt-fill me-2"></i>Find &amp; Reserve Slot
+                    </a>
+                    <a th:href="@{/pricing}" class="btn btn-outline-light btn-lg px-4 py-3">
+                        <i class="bi bi-tag-fill me-2"></i>View Pricing Rates
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Search Widget Card -->
+            <div class="col-lg-5">
+                <div class="card p-4 shadow-lg border-0 bg-white text-dark">
+                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                        <h5 class="fw-bold mb-0 text-primary">
+                            <i class="bi bi-search me-2"></i>Quick Slot Search
+                        </h5>
+                        <span class="badge bg-primary-subtle text-primary border">Instant Reserve</span>
+                    </div>
+
+                    <form th:action="@{/driver/search}" method="get" th:object="${searchRequest}">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Parking Zone / Location</label>
+                            <select class="form-select" th:field="*{zoneId}">
+                                <option value="">All Zones &amp; Locations</option>
+                                <option th:each="zone : ${zones}" th:value="${zone.id}" th:text="${zone.name + ' (' + zone.location + ')'}"></option>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Vehicle Type</label>
+                                <select class="form-select" th:field="*{vehicleType}">
+                                    <option value="">Any Vehicle</option>
+                                    <option value="CAR">Car</option>
+                                    <option value="BIKE">Motorcycle / Bike</option>
+                                    <option value="EV">Electric Vehicle (EV)</option>
+                                    <option value="TRUCK">Truck / Commercial</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Duration (Hours)</label>
+                                <select class="form-select" th:field="*{durationHours}">
+                                    <option value="1">1 Hour</option>
+                                    <option value="2">2 Hours</option>
+                                    <option value="4">4 Hours</option>
+                                    <option value="8">8 Hours</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Check Live Slots
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Live Facilities Counter -->
+<section class="py-4 bg-white border-bottom shadow-sm">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3">
+                <div class="p-2">
+                    <div class="fs-1 fw-bold text-primary" th:text="${totalSlots}">47</div>
+                    <div class="text-muted small text-uppercase fw-semibold">Total Smart Slots</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2">
+                    <div class="fs-1 fw-bold text-success" th:text="${availableSlots}">35</div>
+                    <div class="text-muted small text-uppercase fw-semibold">Available Right Now</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2">
+                    <div class="fs-1 fw-bold text-danger" th:text="${occupiedSlots}">10</div>
+                    <div class="text-muted small text-uppercase fw-semibold">Currently Occupied</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2">
+                    <div class="fs-1 fw-bold text-info" th:text="${#lists.size(zones)}">3</div>
+                    <div class="text-muted small text-uppercase fw-semibold">Active Zones</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-5 bg-light">
+    <div class="container py-4">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <h6 class="text-uppercase text-primary fw-bold letter-spacing-1">Streamlined Workflow</h6>
+            <h2 class="fw-bold">How SmartPark Works</h2>
+            <p class="text-muted">Effortless parking in four simple steps from anywhere on your mobile or desktop browser.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card h-100 text-center p-4 border-0 shadow-sm card-hover">
+                    <div class="stat-icon blue mx-auto mb-3">
+                        <i class="bi bi-search fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">1. Search &amp; Filter</h5>
+                    <p class="text-muted small">Locate available parking bays by zone, terminal, vehicle type, and scheduled time window.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 text-center p-4 border-0 shadow-sm card-hover">
+                    <div class="stat-icon green mx-auto mb-3">
+                        <i class="bi bi-calendar-check fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">2. Reserve Instantly</h5>
+                    <p class="text-muted small">Lock in your dedicated slot with concurrency protection and transparent pricing estimates.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 text-center p-4 border-0 shadow-sm card-hover">
+                    <div class="stat-icon amber mx-auto mb-3">
+                        <i class="bi bi-qr-code-scan fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">3. Check-In &amp; Park</h5>
+                    <p class="text-muted small">Present your digital QR booking code to the parking operator for instant gate validation.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 text-center p-4 border-0 shadow-sm card-hover">
+                    <div class="stat-icon purple mx-auto mb-3">
+                        <i class="bi bi-credit-card-2-front fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">4. Checkout &amp; Pay</h5>
+                    <p class="text-muted small">Automated duration billing with free-minute grace periods and printable digital receipts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Role Highlights Section -->
+<section class="py-5 bg-white border-top">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <h6 class="text-uppercase text-primary fw-bold">Integrated Roles</h6>
+            <h2 class="fw-bold">Engineered for Every Stakeholder</h2>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card h-100 p-4 border-primary border-opacity-25 shadow-sm">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon green"><i class="bi bi-person-fill fs-3"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0">For Drivers</h5>
+                            <small class="text-muted">Vehicle Owners &amp; Visitors</small>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled text-secondary small space-y-2 mb-4">
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Search live bays across all facilities</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Multi-vehicle garage management</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Digital QR pass &amp; booking receipts</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Real-time in-app notifications</li>
+                    </ul>
+                    <a th:href="@{/register}" class="btn btn-outline-primary btn-sm mt-auto">Sign Up as Driver</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100 p-4 border-warning border-opacity-25 shadow-sm">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon amber"><i class="bi bi-shield-check fs-3"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0">For Operators</h5>
+                            <small class="text-muted">On-site Gate &amp; Yard Staff</small>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled text-secondary small space-y-2 mb-4">
+                        <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Real-time color-coded slot grid</li>
+                        <li><i class="bi bi-check-circle-fill text-warning me-2"></i>One-click Check-in &amp; Check-out</li>
+                        <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Cash collection recording</li>
+                        <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Maintenance slot locking</li>
+                    </ul>
+                    <a th:href="@{/login}" class="btn btn-outline-warning text-dark btn-sm mt-auto">Operator Portal</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100 p-4 border-info border-opacity-25 shadow-sm">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon purple"><i class="bi bi-gear-fill fs-3"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0">For Administrators</h5>
+                            <small class="text-muted">Facility Managers &amp; Executive</small>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled text-secondary small space-y-2 mb-4">
+                        <li><i class="bi bi-check-circle-fill text-primary me-2"></i>Interactive Chart.js Analytics</li>
+                        <li><i class="bi bi-check-circle-fill text-primary me-2"></i>Granular pricing rules engine</li>
+                        <li><i class="bi bi-check-circle-fill text-primary me-2"></i>User &amp; Operator account controls</li>
+                        <li><i class="bi bi-check-circle-fill text-primary me-2"></i>CSV Revenue &amp; Occupancy Export</li>
+                    </ul>
+                    <a th:href="@{/login}" class="btn btn-outline-info text-dark btn-sm mt-auto">Admin Console</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

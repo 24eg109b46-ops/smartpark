@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Sign In')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow border-0 p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="stat-icon blue mx-auto mb-3">
+                        <i class="bi bi-box-arrow-in-right fs-2"></i>
+                    </div>
+                    <h3 class="fw-bold">Sign In to SmartPark</h3>
+                    <p class="text-muted small">Enter your credentials to access your dashboard</p>
+                </div>
+
+                <form th:action="@{/login}" method="post" id="loginForm">
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" required placeholder="name@example.com">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember-me" name="remember-me">
+                            <label class="form-check-label small" for="remember-me">Remember me</label>
+                        </div>
+                        <a th:href="@{/register}" class="small text-decoration-none">Need an account?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </button>
+                </form>
+
+                <!-- Demo Quick Fill Helpers -->
+                <div class="border-top pt-3 mt-2">
+                    <p class="text-muted text-center small fw-semibold mb-2">⚡ Quick-Fill Demo Accounts</p>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm text-start" onclick="fillCredentials('admin@smartpark.com', 'Admin@123')">
+                            <i class="bi bi-shield-lock-fill me-1"></i> Admin: <strong>admin@smartpark.com</strong>
+                        </button>
+                        <button type="button" class="btn btn-outline-warning text-dark btn-sm text-start" onclick="fillCredentials('operator@smartpark.com', 'Operator@123')">
+                            <i class="bi bi-person-workspace me-1"></i> Operator: <strong>operator@smartpark.com</strong>
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm text-start" onclick="fillCredentials('driver@smartpark.com', 'Driver@123')">
+                            <i class="bi bi-car-front-fill me-1"></i> Driver: <strong>driver@smartpark.com</strong>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function fillCredentials(email, pass) {
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = pass;
+    }
+</script>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

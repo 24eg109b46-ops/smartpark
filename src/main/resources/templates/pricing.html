@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Transparent Pricing Rates')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container py-5">
+    <div class="text-center max-w-700 mx-auto mb-5">
+        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-1 fw-bold">Simple &amp; Predictable Rates</span>
+        <h2 class="display-6 fw-bold">SmartPark Pricing Rules</h2>
+        <p class="text-muted">Calculated transparently by vehicle category, duration, and designated zone with a 15-minute free grace window.</p>
+    </div>
+
+    <!-- Rate Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                <div class="stat-icon blue mx-auto mb-3"><i class="bi bi-car-front fs-2"></i></div>
+                <h5 class="fw-bold">Car</h5>
+                <div class="my-2">
+                    <span class="display-6 fw-bold text-primary">$25</span>
+                    <span class="text-muted small">/ hour</span>
+                </div>
+                <ul class="list-unstyled text-muted small mt-3 mb-0">
+                    <li>Min Charge: $25.00</li>
+                    <li>Grace Window: 15 mins</li>
+                    <li>Zone A &amp; C standard</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                <div class="stat-icon green mx-auto mb-3"><i class="bi bi-bicycle fs-2"></i></div>
+                <h5 class="fw-bold">Bike / Motorcycle</h5>
+                <div class="my-2">
+                    <span class="display-6 fw-bold text-success">$10</span>
+                    <span class="text-muted small">/ hour</span>
+                </div>
+                <ul class="list-unstyled text-muted small mt-3 mb-0">
+                    <li>Min Charge: $10.00</li>
+                    <li>Grace Window: 15 mins</li>
+                    <li>Dedicated Zone C bays</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                <div class="stat-icon amber mx-auto mb-3"><i class="bi bi-lightning-charge fs-2"></i></div>
+                <h5 class="fw-bold">Electric Vehicle</h5>
+                <div class="my-2">
+                    <span class="display-6 fw-bold text-warning">$30 - $35</span>
+                    <span class="text-muted small">/ hour</span>
+                </div>
+                <ul class="list-unstyled text-muted small mt-3 mb-0">
+                    <li>Min Charge: $30.00</li>
+                    <li>Underground EV charging</li>
+                    <li>Zone B specialized bays</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                <div class="stat-icon purple mx-auto mb-3"><i class="bi bi-truck fs-2"></i></div>
+                <h5 class="fw-bold">Truck / Heavy</h5>
+                <div class="my-2">
+                    <span class="display-6 fw-bold text-info">$50</span>
+                    <span class="text-muted small">/ hour</span>
+                </div>
+                <ul class="list-unstyled text-muted small mt-3 mb-0">
+                    <li>Min Charge: $50.00</li>
+                    <li>Heavy vehicle clearance</li>
+                    <li>Zone A designated gates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Pricing Rules Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-table me-2"></i>Active Configured Tariff Rules</h5>
+            <span class="badge bg-success-subtle text-success">Live Engine</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Vehicle Type</th>
+                    <th>Zone Applicability</th>
+                    <th>Hourly Rate</th>
+                    <th>Minimum Charge</th>
+                    <th>Free Minutes</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="rule : ${rules}">
+                    <td>
+                        <span class="badge bg-secondary" th:text="${rule.vehicleType}">CAR</span>
+                    </td>
+                    <td class="fw-semibold" th:text="${rule.zoneName}">Global</td>
+                    <td class="text-primary fw-bold" th:text="'$' + ${rule.ratePerHour} + ' / hr'">$25.00</td>
+                    <td th:text="'$' + ${rule.minCharge}">$25.00</td>
+                    <td th:text="${rule.freeMinutes} + ' mins'">15 mins</td>
+                    <td>
+                        <span class="badge bg-success" th:if="${rule.active}">Active</span>
+                        <span class="badge bg-secondary" th:unless="${rule.active}">Inactive</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-light p-3 small text-muted">
+            <i class="bi bi-info-circle me-1"></i> Billing Formula:
+            <code>Charge = max(min_charge, ceil((exit - entry - free_minutes) / 60) * rate_per_hour)</code>. Zone-specific tariff takes precedence over vehicle-type default.
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>
