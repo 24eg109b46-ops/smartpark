@@ -63,7 +63,8 @@ public class SecurityConfig {
                     "/css/**",
                     "/js/**",
                     "/img/**",
-                    "/favicon.ico"
+                    "/favicon.ico",
+                    "/api/**"
                 ).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
@@ -72,7 +73,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
+                .ignoringRequestMatchers("/h2-console/**", "/api/**")
             )
             .headers(headers -> headers
                 .addHeaderWriter(new XFrameOptionsHeaderWriter(XFrameOptionsHeaderWriter.XFrameOptionsMode.SAMEORIGIN))
