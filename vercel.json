@@ -1,16 +1,17 @@
 {
   "version": 2,
-  "name": "smartpark",
-  "builds": [
-    {
-      "src": "src/main/resources/static/**",
-      "use": "@vercel/static"
-    }
+  "name": "smartpark-frontend",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/frontend/$1" }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/(.*)",
-      "dest": "https://smartpark-system.onrender.com/$1"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" }
+      ]
     }
   ]
 }

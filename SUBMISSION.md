@@ -14,19 +14,19 @@ Developed using Java 17 and Spring Boot 3 with Spring Security 6, Hibernate ORM,
 ---
 
 ### 3. Frontend Repository Link
-`https://github.com/YOUR_GITHUB_USERNAME/smartpark`  
-*(Note: Monorepo architecture — frontend is integrated server-side with Thymeleaf 3, Bootstrap 5, HTML5/CSS3, and vanilla JS under `src/main/resources/templates` and `src/main/resources/static`)*
+`https://github.com/YOUR_GITHUB_USERNAME/smartpark/tree/main/frontend`  
+*(Standalone Single-Page Web Client ready for Vercel deployment under `frontend/`)*
 
 ---
 
 ### 4. Backend Repository Link
-`https://github.com/YOUR_GITHUB_USERNAME/smartpark`  
-*(Note: Monorepo architecture — Spring Boot 3 REST/MVC backend, JPA persistence, and services reside under `src/main/java/com/smartpark`)*
+`https://github.com/YOUR_GITHUB_USERNAME/smartpark/tree/main/backend`  
+*(Java 17 + Spring Boot 3.3.4 REST API & MVC backend with Maven build under `backend/`)*
 
 ---
 
 ### 5. Deployment Link
-- **Live Cloud Web Application (Render / Railway):** `https://smartpark-system.onrender.com`  
-- **Vercel Proxy / Static Edge:** `https://smartpark.vercel.app`  
+- **Live Backend REST & MVC Service (Render):** `https://smartpark-backend.onrender.com`  
+- **Live Frontend Web Client (Vercel):** `https://smartpark-client.vercel.app`  
 
-> **Architecture Monorepo Note:** SmartPark is engineered as a production-grade single monorepo. Both the backend business logic and the responsive, server-rendered frontend UI live synchronously within the same repository to maintain atomic versioning, zero CORS overhead, and streamlined continuous deployment.
+> **Separated Monorepo Architecture:** SmartPark is organized into distinct `backend/` and `frontend/` directories within a unified GitHub repository. The backend is built and tested via Maven/Docker for one-click deployment on Render, while the frontend is configured with `vercel.json` for edge hosting on Vercel with seamless cross-origin REST communication.

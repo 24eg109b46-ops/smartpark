@@ -145,7 +145,7 @@ public class BookingApiController {
         map.put("vehicleNumber", b.getVehicle().getVehicleNumber());
         map.put("vehicleType", b.getVehicle().getVehicleType().name());
         map.put("slotNumber", b.getSlot().getSlotNumber());
-        map.put("zoneName", b.getSlot.getZone().getName());
+        map.put("zoneName", b.getSlot().getZone().getName());
         map.put("zoneLocation", b.getSlot().getZone().getLocation());
         map.put("entryTime", b.getEntryTime() != null ? b.getEntryTime().format(dtf) : null);
         map.put("exitTime", b.getExitTime() != null ? b.getExitTime().format(dtf) : null);

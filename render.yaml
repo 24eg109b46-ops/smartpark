@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: smartpark-system
+    name: smartpark-backend
     env: docker
-    dockerfilePath: Dockerfile
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
     plan: free
     region: oregon
     envVars:

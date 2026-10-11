@@ -103,70 +103,96 @@ erDiagram
 
 ---
 
-## 6. Monorepo Project Structure
+## 6. Monorepo Project Structure (Separated Backend & Frontend)
 
 ```
 smartpark/
-├── .github/workflows/ci.yml       # GitHub Actions CI workflow
-├── docs/                          # Architecture & ER diagrams
-│   ├── ARCHITECTURE.md
-│   ├── ER_DIAGRAM.md
-│   └── screenshots/               # Visual UI walk-throughs
-├── src/
-│   ├── main/
-│   │   ├── java/com/smartpark/
-│   │   │   ├── config/            # SecurityConfig, DataSeeder
-│   │   │   ├── controller/        # Auth, Driver, Operator, Admin, Error controllers
-│   │   │   ├── dto/               # Strongly-typed Form & View DTOs
-│   │   │   ├── entity/            # JPA Entities (User, Slot, Booking, etc.)
-│   │   │   ├── enums/             # Role, Status, VehicleType, PaymentMode
-│   │   │   ├── exception/         # Custom exceptions & GlobalExceptionHandler
-│   │   │   ├── repository/        # Spring Data JPA repositories with locks
-│   │   │   ├── scheduler/         # Automated booking expiry background task
-│   │   │   ├── security/          # CustomUserDetails, SuccessHandler
-│   │   │   ├── service/           # Service interfaces and implementations
-│   │   │   └── util/              # ZXing QR Code generator
-│   │   └── resources/
-│   │       ├── static/            # Custom CSS styles, JS, brand icons
-│   │       ├── templates/         # Thymeleaf templates (fragments, auth, driver, operator, admin)
-│   │       ├── application.properties
-│   │       ├── application-local.properties
-│   │       └── application-prod.properties
-│   └── test/java/com/smartpark/   # Unit and MockMvc integration tests
-├── Dockerfile                     # Multi-stage optimized JRE 17 container
-├── docker-compose.yml             # App + MySQL 8 with healthchecks
-├── render.yaml                    # Infrastructure-as-code for Render
-├── vercel.json                    # Edge routing for Vercel
-├── pom.xml                        # Maven configuration
+├── backend/                       # Java 17 + Spring Boot 3.3.4 REST API & MVC Backend
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/smartpark/
+│   │   │   │   ├── config/        # SecurityConfig, CorsConfig, DataSeeder
+│   │   │   │   ├── controller/    # Web MVC Controllers & REST API Controllers (/api/**)
+│   │   │   │   │   └── api/       # AuthApiController, SlotApiController, BookingApiController, etc.
+│   │   │   │   ├── dto/           # Strongly-typed Form & View DTOs
+│   │   │   │   ├── entity/        # JPA Entities (User, Slot, Booking, etc.)
+│   │   │   │   ├── enums/         # Role, Status, VehicleType, PaymentMode
+│   │   │   │   ├── exception/     # Custom exceptions & GlobalExceptionHandler
+│   │   │   │   ├── repository/    # Spring Data JPA repositories with pessimistic locks
+│   │   │   │   ├── scheduler/     # Automated booking expiry background task
+│   │   │   │   ├── security/      # CustomUserDetails, SuccessHandler
+│   │   │   │   ├── service/       # Service interfaces and implementations
+│   │   │   │   └── util/          # ZXing QR Code generator
+│   │   │   └── resources/
+│   │   │       ├── static/        # Static assets
+│   │   │       ├── templates/     # Thymeleaf templates (fragments, auth, driver, operator, admin)
+│   │   │       ├── application.properties
+│   │   │       ├── application-local.properties
+│   │   │       └── application-prod.properties
+│   │   └── test/java/com/smartpark/ # Unit and MockMvc integration tests (17 passing tests)
+│   ├── Dockerfile                 # Multi-stage optimized JRE 17 container
+│   ├── pom.xml                    # Maven configuration
+│   └── .env.example               # Backend environment variable template
+│
+├── frontend/                      # Standalone Web Client ready for Vercel deployment
+│   ├── index.html                 # Single-Page UI for Driver, Operator, and Admin roles
+│   ├── css/
+│   │   └── styles.css             # SmartPark design theme (Deep Blue + Emerald Green)
+│   ├── js/
+│   │   └── app.js                 # API client state management, live occupancy & charts
+│   ├── package.json               # Frontend package descriptor
+│   └── vercel.json                # Vercel client deployment configuration
+│
+├── .github/workflows/ci.yml       # GitHub Actions CI workflow (runs backend maven test suite)
+├── docker-compose.yml             # App (backend) + MySQL 8 with healthchecks
+├── render.yaml                    # Infrastructure-as-code for Render backend deployment
+├── vercel.json                    # Root edge routing for Vercel
+├── .gitignore                     # Repository-wide ignore rules
 ├── README.md                      # Comprehensive documentation
-└── SUBMISSION.md                  # Project submission form text
+└── SUBMISSION.md                  # Project submission documentation
 ```
 
 ---
 
 ## 7. Local Quick Start
 
-### Option A: Local In-Memory H2 Mode (Zero Database Setup Required)
+### Step 1: Run the Backend (Spring Boot 3 + Maven)
 Ensure **Java 17+** and **Maven** are installed:
 ```bash
-cd smartpark
+cd backend
 mvn clean test
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run --spring.profiles.active=local
 ```
-Access the application at `http://localhost:8080`.  
-H2 Web Console is available at `http://localhost:8080/h2-console` (`JDBC URL: jdbc:h2:mem:smartparkdb`).
+- The backend will start on **http://localhost:8080**.
+- REST APIs are served under `http://localhost:8080/api/*`.
+- Built-in Thymeleaf pages are also active at `http://localhost:8080/`.
+- H2 Web Console: `http://localhost:8080/h2-console` (`JDBC URL: jdbc:h2:mem:smartparkdb`, `User: sa`, `Password: <blank>`).
+
+### Step 2: Run the Standalone Frontend
+You can run the frontend in any static HTTP server or open directly:
+```bash
+cd frontend
+# Using Python:
+python -m http.server 3000
+
+# OR using npx serve:
+npx serve . -p 3000
+```
+Open **http://localhost:3000** in your browser.  
+In the header, set the **API Server** target to `http://localhost:8080` (or leave default `/api` if using reverse proxy).
 
 ---
 
 ## 8. Docker & Containerization
 
 ### Run App + MySQL 8 via Docker Compose:
+From the repository root:
 ```bash
 docker-compose up --build -d
 ```
 Docker Compose spins up:
 1. `smartpark-mysql`: MySQL 8.0 with healthcheck and persistent volume
-2. `smartpark-app`: Spring Boot production container honoring `$PORT`
+2. `smartpark-app`: Spring Boot container built from `./backend` honoring dynamic `$PORT`
 
 Verify logs:
 ```bash
@@ -175,24 +201,48 @@ docker-compose logs -f smartpark-app
 
 ---
 
-## 9. Deployment Guide (Render & Vercel)
+## 9. Deployment Guide (GitHub, Render & Vercel)
 
-### Deploying to Render
-1. Push repository to GitHub.
-2. In [Render Dashboard](https://dashboard.render.com), click **New +** -> **Web Service**.
-3. Connect your repository and select **Docker** runtime (or point to `render.yaml`).
+### 1. Push Repository to GitHub
+```bash
+# Check status and stage all files
+git add .
+git commit -m "feat: complete separated backend and frontend architecture"
+
+# Add your GitHub remote repository
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/smartpark.git
+git branch -M main
+git push -u origin main
+```
+
+### 2. Deploy Backend to Render (Docker Web Service)
+1. In your [Render Dashboard](https://dashboard.render.com), click **New +** -> **Web Service**.
+2. Connect your GitHub repository: `smartpark`.
+3. Set the following options:
+   - **Root Directory**: `backend` (or leave empty if using `render.yaml`)
+   - **Runtime**: **Docker**
+   - **Docker Context**: `backend`
+   - **Dockerfile Path**: `backend/Dockerfile`
 4. Set Environment Variables:
-   - `PORT`: `10000` (Render default)
+   - `PORT`: `10000` (Render default port)
    - `SPRING_PROFILES_ACTIVE`: `prod`
    - `DB_URL`: `jdbc:mysql://<AIVEN_OR_RAILWAY_HOST>:<PORT>/smartpark?useSSL=true&serverTimezone=UTC`
    - `DB_USER`: `<YOUR_MYSQL_USERNAME>`
    - `DB_PASS`: `<YOUR_MYSQL_PASSWORD>`
-5. Click **Deploy Web Service**.
+5. Click **Create Web Service**. Your backend will be deployed at `https://smartpark-backend.onrender.com`.
 
-### Deploying with Vercel
-For deploying the frontend or routing requests through Vercel:
-1. Connect the repository to Vercel.
-2. Ensure `vercel.json` routes point to your active Render or Railway backend instance.
+### 3. Deploy Frontend to Vercel
+1. Go to your [Vercel Dashboard](https://vercel.com/dashboard) and click **Add New...** -> **Project**.
+2. Import your GitHub repository: `smartpark`.
+3. Under **Project Settings**:
+   - Set **Root Directory** to `frontend`.
+   - Framework Preset: **Other**.
+4. Click **Deploy**.
+5. Once deployed, open your live Vercel URL (e.g., `https://smartpark-client.vercel.app`), click the **API Server** input in the top header, and enter your live Render backend URL:
+   ```
+   https://smartpark-backend.onrender.com
+   ```
+   All authentication, live slot bookings, QR passes, occupancy grids, and analytics will seamlessly communicate with your Render backend over HTTPS with full CORS support!
 
 ---
 
