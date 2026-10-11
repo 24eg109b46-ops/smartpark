@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Slots Management')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Parking Slots &amp; Bay Control</h2>
+            <p class="text-muted small mb-0">Create individual slots, bulk-generate bays, and manage operational statuses</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkSlotModal">
+                <i class="bi bi-collection-fill me-1"></i> Bulk Create Slots
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSlotModal">
+                <i class="bi bi-plus-lg me-1"></i> Add Single Slot
+            </button>
+        </div>
+    </div>
+
+    <!-- Zone Selector Filter -->
+    <div class="card shadow-sm border-0 mb-4 p-3">
+        <form th:action="@{/operator/slots}" method="get" class="d-flex align-items-center gap-3">
+            <label class="fw-semibold small text-muted text-nowrap">Filter by Zone:</label>
+            <select class="form-select form-select-sm max-w-300" name="zoneId" onchange="this.form.submit()">
+                <option value="">All Facilities &amp; Zones</option>
+                <option th:each="z : ${zones}" th:value="${z.id}" th:text="${z.name}" th:selected="${selectedZoneId == z.id}"></option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Slots Table -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Slot Number</th>
+                    <th>Zone</th>
+                    <th>Vehicle Type</th>
+                    <th>Current Status</th>
+                    <th>Update Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(slots)}">
+                    <td colspan="6" class="text-center py-4 text-muted">No parking slots found.</td>
+                </tr>
+                <tr th:each="s : ${slots}">
+                    <td class="fw-bold text-primary font-monospace fs-5" th:text="${s.slotNumber}">A-01</td>
+                    <td class="fw-semibold" th:text="${s.zone.name}">Zone A</td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary" th:text="${s.vehicleType}">CAR</span>
+                    </td>
+                    <td>
+                        <span th:if="${s.status.name() == 'AVAILABLE'}" class="badge bg-success">AVAILABLE</span>
+                        <span th:if="${s.status.name() == 'RESERVED'}" class="badge bg-warning text-dark">RESERVED</span>
+                        <span th:if="${s.status.name() == 'OCCUPIED'}" class="badge bg-danger">OCCUPIED</span>
+                        <span th:if="${s.status.name() == 'MAINTENANCE'}" class="badge bg-secondary">MAINTENANCE</span>
+                    </td>
+                    <td>
+                        <form th:action="@{/operator/slots/{id}/status(id=${s.id})}" method="post" class="d-inline-flex gap-2 align-items-center">
+                            <input type="hidden" name="redirectZoneId" th:value="${selectedZoneId}">
+                            <select name="status" class="form-select form-select-sm" style="width: 140px;">
+                                <option value="AVAILABLE" th:selected="${s.status.name() == 'AVAILABLE'}">AVAILABLE</option>
+                                <option value="RESERVED" th:selected="${s.status.name() == 'RESERVED'}">RESERVED</option>
+                                <option value="OCCUPIED" th:selected="${s.status.name() == 'OCCUPIED'}">OCCUPIED</option>
+                                <option value="MAINTENANCE" th:selected="${s.status.name() == 'MAINTENANCE'}">MAINTENANCE</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Update</button>
+                        </form>
+                    </td>
+                    <td class="text-end">
+                        <form th:action="@{/operator/slots/{id}/delete(id=${s.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete this slot?');">
+                            <input type="hidden" name="redirectZoneId" th:value="${selectedZoneId}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Single Slot Modal -->
+<div class="modal fade" id="addSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/operator/slots}" method="post" th:object="${slotDto}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Add Single Parking Slot</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Zone *</label>
+                        <select class="form-select" th:field="*{zoneId}" required>
+                            <option value="" disabled selected>-- Select Zone --</option>
+                            <option th:each="z : ${zones}" th:value="${z.id}" th:text="${z.name}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Slot Identifier (e.g. A-15) *</label>
+                        <input type="text" class="form-control" th:field="*{slotNumber}" required placeholder="e.g. A-15">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vehicle Type *</label>
+                        <select class="form-select" th:field="*{vehicleType}" required>
+                            <option value="CAR">Car</option>
+                            <option value="BIKE">Motorcycle / Bike</option>
+                            <option value="EV">Electric Vehicle (EV)</option>
+                            <option value="TRUCK">Truck / Commercial</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Initial Status</label>
+                        <select class="form-select" th:field="*{status}">
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Create Slots Modal -->
+<div class="modal fade" id="bulkSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/operator/slots/bulk}" method="post" th:object="${bulkRequest}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-collection-fill me-2"></i>Bulk Create Slots</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Target Zone *</label>
+                        <select class="form-select" th:field="*{zoneId}" required>
+                            <option value="" disabled selected>-- Select Zone --</option>
+                            <option th:each="z : ${zones}" th:value="${z.id}" th:text="${z.name}"></option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Slot Prefix *</label>
+                            <input type="text" class="form-control" th:field="*{prefix}" required placeholder="e.g. 'A-', 'EV-'">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Start Number</label>
+                            <input type="number" class="form-control" th:field="*{startNumber}" min="1" value="1" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Count (Quantity)</label>
+                            <input type="number" class="form-control" th:field="*{count}" min="1" max="100" value="10" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Vehicle Type</label>
+                            <select class="form-select" th:field="*{vehicleType}" required>
+                                <option value="CAR">Car</option>
+                                <option value="BIKE">Motorcycle / Bike</option>
+                                <option value="EV">Electric Vehicle (EV)</option>
+                                <option value="TRUCK">Truck / Commercial</option>
+                            </select>
+                        </div>
+                    </div>
+                    <small class="text-muted">Example: Prefix <code>B-</code>, Start 1, Count 5 will generate <code>B-01, B-02, B-03, B-04, B-05</code>.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate Slots</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

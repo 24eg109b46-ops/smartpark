@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: head('Gate Bookings Processing')}"></head>
+<body class="bg-light">
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: alerts}"></div>
+
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Gate Processing &amp; Bookings</h2>
+            <p class="text-muted small mb-0">Process entry check-in, exit check-out, duration fees, and cash settlement</p>
+        </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="card shadow-sm border-0 mb-4 p-3">
+        <form th:action="@{/operator/bookings}" method="get" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="query" th:value="${query}" placeholder="Search code, plate, driver, slot...">
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}" th:selected="${currentStatus == st}"></option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+            </div>
+            <div class="col-md-2">
+                <a th:href="@{/operator/bookings}" class="btn btn-sm btn-outline-secondary w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Booking Code</th>
+                    <th>Driver Details</th>
+                    <th>Vehicle Plate</th>
+                    <th>Slot &amp; Zone</th>
+                    <th>Entry Time</th>
+                    <th>Exit Time</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th class="text-end">Gate Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${bookingsPage.totalElements == 0}">
+                    <td colspan="10" class="text-center py-5 text-muted">
+                        No bookings found matching current query.
+                    </td>
+                </tr>
+                <tr th:each="b : ${bookingsPage.content}">
+                    <td class="fw-bold text-primary font-monospace" th:text="${b.bookingCode}">SP-12345678</td>
+                    <td>
+                        <div class="fw-semibold" th:text="${b.user.name}">John Driver</div>
+                        <small class="text-muted" th:text="${b.user.email}">email</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border font-monospace" th:text="${b.vehicle.vehicleNumber}">KA-01-AB-1234</span>
+                        <small class="text-muted d-block" th:text="${b.vehicle.vehicleType}">CAR</small>
+                    </td>
+                    <td>
+                        <strong class="text-primary" th:text="${b.slot.slotNumber}">A-01</strong>
+                        <small class="text-muted d-block" th:text="${b.slot.zone.name}">Zone A</small>
+                    </td>
+                    <td>
+                        <span th:text="${#temporals.format(b.entryTime, 'dd MMM, HH:mm')}">Entry</span>
+                    </td>
+                    <td>
+                        <span th:if="${b.exitTime != null}" th:text="${#temporals.format(b.exitTime, 'dd MMM, HH:mm')}">Exit</span>
+                        <span th:unless="${b.exitTime != null}" class="text-muted small">In Session</span>
+                    </td>
+                    <td class="fw-bold text-success" th:text="'$' + ${b.amount}">$25.00</td>
+                    <td>
+                        <span th:if="${b.status.name() == 'ACTIVE'}" class="badge bg-danger">ACTIVE</span>
+                        <span th:if="${b.status.name() == 'CONFIRMED'}" class="badge bg-warning text-dark">CONFIRMED</span>
+                        <span th:if="${b.status.name() == 'COMPLETED'}" class="badge bg-success">COMPLETED</span>
+                        <span th:if="${b.status.name() == 'CANCELLED'}" class="badge bg-secondary">CANCELLED</span>
+                        <span th:if="${b.status.name() == 'EXPIRED'}" class="badge bg-dark">EXPIRED</span>
+                    </td>
+                    <td>
+                        <span th:if="${b.payment != null and b.payment.status.name() == 'PAID'}" class="badge bg-success">PAID</span>
+                        <span th:if="${b.payment != null and b.payment.status.name() == 'PENDING'}" class="badge bg-warning text-dark">UNPAID</span>
+                        <span th:if="${b.payment == null}" class="badge bg-secondary">N/A</span>
+                    </td>
+                    <td class="text-end">
+                        <!-- Check In Button -->
+                        <form th:if="${b.status.name() == 'CONFIRMED' or b.status.name() == 'PEND'}"
+                              th:action="@{/operator/bookings/check-in/{id}(id=${b.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success mb-1">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Check-in
+                            </button>
+                        </form>
+
+                        <!-- Check Out Button -->
+                        <form th:if="${b.status.name() == 'ACTIVE'}"
+                              th:action="@{/operator/bookings/check-out/{id}(id=${b.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger mb-1">
+                                <i class="bi bi-box-arrow-right me-1"></i> Check-out
+                            </button>
+                        </form>
+
+                        <!-- Cash Payment Button if completed or active and unpaid -->
+                        <button th:if="${b.payment != null and b.payment.status.name() != 'PAID'}"
+                                class="btn btn-sm btn-outline-success mb-1"
+                                data-bs-toggle="modal" th:data-bs-target="'#cashModal-' + ${b.id}">
+                            <i class="bi bi-cash me-1"></i> Cash
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center" th:if="${bookingsPage.totalPages > 1}">
+            <div class="small text-muted">
+                Page <span th:text="${bookingsPage.number + 1}">1</span> of <span th:text="${bookingsPage.totalPages}">1</span>
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" th:classappend="${bookingsPage.first ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/operator/bookings(page=${bookingsPage.number - 1}, status=${currentStatus}, query=${query})}">Previous</a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link" th:text="${bookingsPage.number + 1}">1</span>
+                </li>
+                <li class="page-item" th:classappend="${bookingsPage.last ? 'disabled' : ''}">
+                    <a class="page-link" th:href="@{/operator/bookings(page=${bookingsPage.number + 1}, status=${currentStatus}, query=${query})}">Next</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Cash Payment Modals -->
+<div th:each="b : ${bookingsPage.content}" th:if="${b.payment != null and b.payment.status.name() != 'PAID'}"
+     class="modal fade" th:id="'cashModal-' + ${b.id}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/operator/bookings/cash-payment/{id}(id=${b.id})}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Record Cash Collection</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Booking Code: <strong class="text-primary font-monospace" th:text="${b.bookingCode}">SP-123</strong></p>
+                    <p class="mb-3">Vehicle Plate: <strong th:text="${b.vehicle.vehicleNumber}">KA-01</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount Collected ($)</label>
+                        <input type="number" step="0.01" class="form-control" name="amount" th:value="${b.amount}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Cash Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>
