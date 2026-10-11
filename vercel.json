@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "smartpark",
+  "builds": [
+    {
+      "src": "src/main/resources/static/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "https://smartpark-system.onrender.com/$1"
+    }
+  ]
+}

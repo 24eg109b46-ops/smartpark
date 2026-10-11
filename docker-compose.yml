@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  smartpark-db:
+    image: mysql:8.0
+    container_name: smartpark-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: smartpark
+      MYSQL_USER: smartpark
+      MYSQL_PASSWORD: smartpark123
+      MYSQL_ROOT_PASSWORD: rootpassword123
+    ports:
+      - "3306:3306"
+    volumes:
+      - smartpark_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "smartpark", "-psmartpark123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - smartpark-net
+
+  smartpark-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartpark-web
+    restart: always
+    depends_on:
+      smartpark-db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://smartpark-db:3306/smartpark?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+      DB_USER: smartpark
+      DB_PASS: smartpark123
+    ports:
+      - "8080:8080"
+    networks:
+      - smartpark-net
+
+volumes:
+  smartpark_db_data:
+    driver: local
+
+networks:
+  smartpark-net:
+    driver: bridge
