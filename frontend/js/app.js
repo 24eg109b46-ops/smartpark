@@ -3,8 +3,43 @@
  * Communicates with Spring Boot REST Backend (Local or Render)
  */
 
+// Helper to normalize any entered URL into a valid API endpoint
+function normalizeApiUrl(raw) {
+    if (!raw || !raw.trim()) {
+        return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:8080/api'
+            : '/api';
+    }
+    let url = raw.trim().replace(/\/+$/, '');
+
+    // 1. Add protocol if missing
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        if (url.startsWith('localhost') || url.startsWith('127.0.0.1')) {
+            url = 'http://' + url;
+        } else {
+            url = 'https://' + url;
+        }
+    }
+
+    // 2. Prevent Mixed Content if current page is on https (upgrade http to https unless localhost)
+    if (window.location.protocol === 'https:' && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+        url = url.replace('http://', 'https://');
+    }
+
+    // 3. Ensure ends with /api
+    if (!url.endsWith('/api')) {
+        url = url + '/api';
+    }
+
+    return url;
+}
+
 // Configurable Backend API Endpoint
-let API_BASE = localStorage.getItem('smartpark_api_base') || 'http://localhost:8080/api';
+let API_BASE = normalizeApiUrl(localStorage.getItem('smartpark_api_base') || (
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:8080/api'
+        : 'https://smartpark-backend.onrender.com/api'
+));
 let currentUser = JSON.parse(localStorage.getItem('smartpark_user') || 'null');
 let charts = {};
 
@@ -12,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initApiConfig();
     updateAuthUI();
     showView('home');
+    testBackendConnectionQuietly();
     loadHomeStats();
 });
 
@@ -23,14 +59,145 @@ function initApiConfig() {
     }
 }
 
+function setApiTarget(url) {
+    const input = document.getElementById('apiBaseInput');
+    if (input) {
+        input.value = normalizeApiUrl(url);
+    }
+}
+
 function saveApiConfig() {
     const input = document.getElementById('apiBaseInput');
     if (input && input.value.trim()) {
-        API_BASE = input.value.trim().replace(/\/+$/, '');
+        API_BASE = normalizeApiUrl(input.value);
+        input.value = API_BASE;
         localStorage.setItem('smartpark_api_base', API_BASE);
-        showToast('Backend endpoint updated: ' + API_BASE, 'success');
+        showToast('Backend endpoint set to: ' + API_BASE, 'success');
+        testBackendConnection();
         loadHomeStats();
     }
+}
+
+// Test Connection Helper
+async function testBackendConnection() {
+    const statusDiv = document.getElementById('apiTestResult');
+    const input = document.getElementById('apiBaseInput');
+    const targetUrl = normalizeApiUrl(input ? input.value : API_BASE);
+    if (input) input.value = targetUrl;
+
+    if (statusDiv) {
+        statusDiv.classList.remove('d-none');
+        statusDiv.className = 'alert alert-info py-2 small mb-3';
+        statusDiv.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Connecting to <code>' + targetUrl + '</code>... (If Render is sleeping, this may take ~30-45s)';
+    }
+
+    const startTime = Date.now();
+    try {
+        const res = await fetch(`${targetUrl}/health`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const latency = Date.now() - startTime;
+        if (res.ok) {
+            const data = await res.json();
+            API_BASE = targetUrl;
+            localStorage.setItem('smartpark_api_base', API_BASE);
+            updateApiStatusBadge(true);
+            if (statusDiv) {
+                statusDiv.className = 'alert alert-success py-2 small mb-3';
+                statusDiv.innerHTML = `<strong>Connected!</strong> Backend is ONLINE (${data.service || 'SmartPark'}, ${latency}ms latency).`;
+            }
+            loadHomeStats();
+        } else {
+            throw new Error(`Server returned HTTP ${res.status}`);
+        }
+    } catch (err) {
+        updateApiStatusBadge(false);
+        if (statusDiv) {
+            statusDiv.className = 'alert alert-danger py-2 small mb-3';
+            statusDiv.innerHTML = `<strong>Connection Failed:</strong> ${err.message}<br><small class="text-muted">Tip: Ensure your Render service is "Live" and has finished deploying. Free instances sleep after inactivity.</small>`;
+        }
+    }
+}
+
+async function testBackendConnectionQuietly() {
+    try {
+        const res = await fetch(`${API_BASE}/health`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+            updateApiStatusBadge(true);
+        } else {
+            updateApiStatusBadge(false);
+        }
+    } catch (e) {
+        updateApiStatusBadge(false);
+    }
+}
+
+function updateApiStatusBadge(isOnline) {
+    const badge = document.getElementById('apiStatusBadge');
+    if (badge) {
+        if (isOnline) {
+            badge.className = 'badge bg-success';
+            badge.textContent = '● Online';
+        } else {
+            badge.className = 'badge bg-danger';
+            badge.textContent = '● Offline';
+        }
+    }
+}
+
+// Robust API Fetch Wrapper with intelligent error translation
+async function apiFetch(endpoint, options = {}) {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    const fullUrl = `${API_BASE}${cleanEndpoint}`;
+
+    const defaultHeaders = {
+        'Accept': 'application/json'
+    };
+    if (options.body && typeof options.body === 'string') {
+        defaultHeaders['Content-Type'] = 'application/json';
+    }
+
+    const merged = {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...(options.headers || {})
+        }
+    };
+
+    let res;
+    try {
+        res = await fetch(fullUrl, merged);
+    } catch (netErr) {
+        console.error('Fetch error for ' + fullUrl, netErr);
+        updateApiStatusBadge(false);
+        throw new Error(
+            `Unable to connect to backend at ${API_BASE}. ` +
+            `If using Render free tier, server may be waking up from sleep (~30-50s). Please click "Backend API" in the top bar to test connection.`
+        );
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        console.warn('Non-JSON response from ' + fullUrl, text.substring(0, 150));
+        if (res.status === 404) {
+            throw new Error(`Endpoint not found (404) at ${fullUrl}. Please ensure API URL ends with /api.`);
+        }
+        if (res.status === 403 || res.status === 401) {
+            throw new Error(`Authentication/Access denied (${res.status}).`);
+        }
+        throw new Error(`Server returned HTML instead of JSON API response. Ensure API target points to backend service with /api.`);
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+    }
+    updateApiStatusBadge(true);
+    return data;
 }
 
 // Navigation View Switcher
@@ -87,13 +254,10 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const res = await fetch(`${API_BASE}/auth/login`, {
+        const data = await apiFetch('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed');
 
         currentUser = data;
         localStorage.setItem('smartpark_user', JSON.stringify(currentUser));
@@ -130,13 +294,10 @@ async function handleRegister(e) {
     const confirmPassword = document.getElementById('regConfirmPassword').value;
 
     try {
-        const res = await fetch(`${API_BASE}/auth/register`, {
+        const data = await apiFetch('/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, phone, password, confirmPassword })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Registration failed');
 
         showToast('Registration successful! Please sign in.', 'success');
         showView('login');
@@ -150,32 +311,30 @@ async function handleRegister(e) {
 // ----------------------------------------------------
 async function loadHomeStats() {
     try {
-        const res = await fetch(`${API_BASE}/admin/stats`);
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById('statTotalSlots').textContent = data.totalSlots || 47;
-            document.getElementById('statAvailableSlots').textContent = data.availableSlots || 35;
-            document.getElementById('statOccupiedSlots').textContent = data.occupiedSlots || 10;
-        }
+        const data = await apiFetch('/admin/stats');
+        document.getElementById('statTotalSlots').textContent = data.totalSlots || 47;
+        document.getElementById('statAvailableSlots').textContent = data.availableSlots || 35;
+        document.getElementById('statOccupiedSlots').textContent = data.occupiedSlots || 10;
+    } catch (err) {
+        console.warn('Stats fetch pending: ' + err.message);
+    }
 
-        const priceRes = await fetch(`${API_BASE}/admin/pricing`);
-        if (priceRes.ok) {
-            const rules = await priceRes.json();
-            const container = document.getElementById('publicTariffTable');
-            if (container) {
-                container.innerHTML = rules.map(r => `
-                    <tr>
-                        <td><span class="badge bg-secondary">${r.vehicleType}</span></td>
-                        <td class="fw-semibold">${r.zoneName || 'Global'}</td>
-                        <td class="text-success fw-bold">$${r.ratePerHour} / hr</td>
-                        <td>$${r.minCharge}</td>
-                        <td>${r.freeMinutes} mins</td>
-                    </tr>
-                `).join('');
-            }
+    try {
+        const rules = await apiFetch('/admin/pricing');
+        const container = document.getElementById('publicTariffTable');
+        if (container && Array.isArray(rules)) {
+            container.innerHTML = rules.map(r => `
+                <tr>
+                    <td><span class="badge bg-secondary">${r.vehicleType}</span></td>
+                    <td class="fw-semibold">${r.zoneName || 'Global'}</td>
+                    <td class="text-success fw-bold">$${r.ratePerHour} / hr</td>
+                    <td>$${r.minCharge}</td>
+                    <td>${r.freeMinutes} mins</td>
+                </tr>
+            `).join('');
         }
     } catch (err) {
-        console.warn('Backend not responding yet on ' + API_BASE);
+        console.warn('Pricing fetch pending: ' + err.message);
     }
 }
 
@@ -184,8 +343,7 @@ async function loadHomeStats() {
 // ----------------------------------------------------
 async function loadSearchZones() {
     try {
-        const res = await fetch(`${API_BASE}/slots/zones`);
-        const zones = await res.json();
+        const zones = await apiFetch('/slots/zones');
         const select = document.getElementById('searchZoneSelect');
         select.innerHTML = '<option value="">All Zones</option>' + zones.map(z => `
             <option value="${z.id}">${z.name} (${z.location})</option>
@@ -207,11 +365,10 @@ async function searchAvailableSlots() {
     query.append('durationHours', duration);
 
     try {
-        const res = await fetch(`${API_BASE}/slots/search?${query.toString()}`);
-        const slots = await res.json();
+        const slots = await apiFetch(`/slots/search?${query.toString()}`);
         const container = document.getElementById('searchResultsGrid');
 
-        if (slots.length === 0) {
+        if (!slots || slots.length === 0) {
             container.innerHTML = `<div class="col-12 text-center py-5 text-muted">No vacant slots found for criteria.</div>`;
             return;
         }
@@ -249,8 +406,7 @@ async function openReserveModal(slotId, slotNumber, zoneName, vehicleType) {
 
     // Load user vehicles
     try {
-        const res = await fetch(`${API_BASE}/vehicles/user/${currentUser.id}`);
-        const vehicles = await res.json();
+        const vehicles = await apiFetch(`/vehicles/user/${currentUser.id}`);
         const vSelect = document.getElementById('modalVehicleSelect');
 
         const matching = vehicles.filter(v => v.vehicleType === vehicleType);
@@ -281,13 +437,10 @@ async function submitReservation() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/bookings?userId=${currentUser.id}`, {
+        const data = await apiFetch(`/bookings?userId=${currentUser.id}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ slotId, vehicleId, durationHours, entryTime })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to reserve');
 
         bootstrap.Modal.getInstance(document.getElementById('reserveSlotModal')).hide();
         showToast('Reservation confirmed! Code: ' + data.bookingCode, 'success');
@@ -312,11 +465,10 @@ function showBookingPass(booking) {
 async function loadDriverBookings() {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_BASE}/bookings/user/${currentUser.id}`);
-        const bookings = await res.json();
+        const bookings = await apiFetch(`/bookings/user/${currentUser.id}`);
         const tbody = document.getElementById('driverBookingsTbody');
 
-        if (bookings.length === 0) {
+        if (!bookings || bookings.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No bookings yet.</td></tr>`;
             return;
         }
@@ -339,11 +491,10 @@ async function loadDriverBookings() {
 async function loadDriverVehicles() {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_BASE}/vehicles/user/${currentUser.id}`);
-        const vehicles = await res.json();
+        const vehicles = await apiFetch(`/vehicles/user/${currentUser.id}`);
         const container = document.getElementById('driverVehiclesGrid');
 
-        if (vehicles.length === 0) {
+        if (!vehicles || vehicles.length === 0) {
             container.innerHTML = `<div class="col-12 text-center py-4 text-muted">No vehicles in garage.</div>`;
             return;
         }
@@ -374,13 +525,10 @@ async function submitAddVehicle(e) {
     const model = document.getElementById('vehModel').value;
 
     try {
-        const res = await fetch(`${API_BASE}/vehicles/user/${currentUser.id}`, {
+        await apiFetch(`/vehicles/user/${currentUser.id}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ vehicleNumber, vehicleType, brand, model })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to add vehicle');
 
         showToast('Vehicle registered!', 'success');
         bootstrap.Modal.getInstance(document.getElementById('addVehicleModal')).hide();
@@ -395,8 +543,7 @@ async function submitAddVehicle(e) {
 // ----------------------------------------------------
 async function loadOperatorGrid() {
     try {
-        const zonesRes = await fetch(`${API_BASE}/slots/zones`);
-        const zones = await zonesRes.json();
+        const zones = await apiFetch('/slots/zones');
         const zoneSelect = document.getElementById('opZoneSelect');
 
         zoneSelect.innerHTML = zones.map(z => `
@@ -413,9 +560,9 @@ async function loadOperatorGrid() {
 
 async function refreshOpSlots(zoneId) {
     zoneId = zoneId || document.getElementById('opZoneSelect').value;
+    if (!zoneId) return;
     try {
-        const res = await fetch(`${API_BASE}/slots/zone/${zoneId}`);
-        const slots = await res.json();
+        const slots = await apiFetch(`/slots/zone/${zoneId}`);
         const container = document.getElementById('operatorGridContainer');
 
         container.innerHTML = slots.map(s => `
@@ -438,8 +585,7 @@ async function refreshOpSlots(zoneId) {
 
 async function loadOperatorBookings() {
     try {
-        const res = await fetch(`${API_BASE}/bookings`);
-        const bookings = await res.json();
+        const bookings = await apiFetch('/bookings');
         const tbody = document.getElementById('opBookingsTbody');
 
         tbody.innerHTML = bookings.map(b => `
@@ -462,9 +608,7 @@ async function loadOperatorBookings() {
 
 async function opCheckIn(bookingId) {
     try {
-        const res = await fetch(`${API_BASE}/bookings/${bookingId}/check-in`, { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        await apiFetch(`/bookings/${bookingId}/check-in`, { method: 'POST' });
         showToast('Check-in confirmed!', 'success');
         loadOperatorBookings();
     } catch (err) {
@@ -474,9 +618,7 @@ async function opCheckIn(bookingId) {
 
 async function opCheckOut(bookingId) {
     try {
-        const res = await fetch(`${API_BASE}/bookings/${bookingId}/check-out`, { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        const data = await apiFetch(`/bookings/${bookingId}/check-out`, { method: 'POST' });
         showToast('Check-out completed! Amount: $' + data.booking.amount, 'info');
         loadOperatorBookings();
     } catch (err) {
@@ -489,8 +631,7 @@ async function opCheckOut(bookingId) {
 // ----------------------------------------------------
 async function loadAdminStats() {
     try {
-        const res = await fetch(`${API_BASE}/admin/stats`);
-        const stats = await res.json();
+        const stats = await apiFetch('/admin/stats');
 
         document.getElementById('adminTotalRev').textContent = '$' + (stats.totalRevenue || 0);
         document.getElementById('adminTodayRev').textContent = '$' + (stats.todayRevenue || 0);
@@ -543,8 +684,7 @@ function renderAdminCharts(stats) {
 
 async function loadAdminUsers() {
     try {
-        const res = await fetch(`${API_BASE}/admin/users`);
-        const users = await res.json();
+        const users = await apiFetch('/admin/users');
         const tbody = document.getElementById('adminUsersTbody');
         tbody.innerHTML = users.map(u => `
             <tr>
@@ -564,8 +704,7 @@ async function loadAdminUsers() {
 
 async function toggleUser(id) {
     try {
-        const res = await fetch(`${API_BASE}/admin/users/${id}/toggle-status`, { method: 'PATCH' });
-        const data = await res.json();
+        const data = await apiFetch(`/admin/users/${id}/toggle-status`, { method: 'PATCH' });
         showToast('Status updated to ' + data.status, 'success');
         loadAdminUsers();
     } catch (err) {
